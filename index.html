@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retailer Product Listings</title>
+    <style>
+        * {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+    overflow: hidden;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+}
+
+h1 {
+    font-size: 2.5em;
+    color: #333;
+}
+
+button {
+    padding: 10px 15px;
+    font-size: 1em;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#search {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background: #fff;
+    margin: 15px 0;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.3s ease;
+}
+
+li:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+img {
+    border-radius: 5px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+form {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+}
+
+label {
+    display: block;
+    margin: 10px 0 5px;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.hidden {
+    display: none;
+}
+
+#user-info {
+    display: flex;
+    align-items: center;
+}
+
+#userName {
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Retailer Product Listings</h1>
+            <div id="user-info">
+                <button id="loginBtn">Login</button>
+                <span id="userName" class="hidden"></span>
+                <button id="logoutBtn" class="hidden">Logout</button>
+            </div>
+        </header>
+        
+        <input type="text" id="search" placeholder="Search for products..." />
+        <button id="addProductBtn">Add New Product</button>
+        
+        <ul id="productList"></ul>
+        
+        <div id="productForm" class="modal">
+            <form id="form">
+                <h2>Add a New Product</h2>
+                <label for="image">Image URL:</label>
+                <input type="text" id="image" required>
+                
+                <label for="title">Product Title:</label>
+                <input type="text" id="title" required>
+                
+                <label for="description">Description:</label>
+                <textarea id="description" required></textarea>
+                
+                <label for="price">Price:</label>
+                <input type="number" id="price" step="0.01" required>
+                
+                <label for="location">Store Location:</label>
+                <input type="text" id="location" required>
+                
+                <button type="submit">Add Product</button>
+                <button type="button" id="closeForm">Cancel</button>
+            </form>
+        </div>
+
+        <div id="cartModal" class="modal">
+            <h2>Your Cart</h2>
+            <ul id="cartList"></ul>
+            <button id="placeOrder">Place Order</button>
+            <button id="closeCart">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null; // Simulate user login status
+let cart = [];
+
+// Get DOM elements
+const productList = document.getElementById('productList');
+const cartList = document.getElementById('cartList');
+const productForm = document.getElementById('productForm');
+const userNameDisplay = document.getElementById('userName');
+const addProductBtn = document.getElementById('addProductBtn');
+const closeFormBtn = document.getElementById('closeForm');
+const cartModal = document.getElementById('cartModal');
+const closeCartBtn = document.getElementById('closeCart');
+const placeOrderBtn = document.getElementById('placeOrder');
+const searchInput = document.getElementById('search');
+const loginBtn = document.getElementById('loginBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+
+// Show the form to add products
+addProductBtn.addEventListener('click', () => {
+    productForm.style.display = 'flex';
+});
+
+// Close the form
+closeFormBtn.addEventListener('click', () => {
+    productForm.style.display = 'none';
+});
+
+// Add product to the list
+document.getElementById('form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    
+    const image = document.getElementById('image').value;
+    const title = document.getElementById('title').value;
+    const description = document.getElementById('description').value;
+    const price = document.getElementById('price').value;
+    const location = document.getElementById('location').value;
+
+    const product = { image, title, description, price, location };
+    addProductToList(product);
+
+    productForm.style.display = 'none';
+});
+
+// Display product in the list
+function addProductToList(product) {
+    const li = document.createElement('li');
+    li.innerHTML = `
+        <img src="${product.image}" alt="${product.title}" width="50">
+        <div>
+            <strong>${product.title}</strong> - $${product.price}<br>
+            <em>${product.description}</em><br>
+            <span>${product.location}</span>
+        </div>
+        <button onclick="addToCart('${product.title}', ${product.price})">Add to Cart</button>
+    `;
+    productList.appendChild(li);
+}
+
+// Add product to cart
+function addToCart(title, price) {
+    if (!currentUser) {
+        alert('Please log in to add items to your cart.');
+        return;
+    }
+    
+    cart.push({ title, price });
+    alert(`${title} added to cart!`);
+}
+
+// Show cart
+function showCart() {
+    cartList.innerHTML = '';
+    cart.forEach(item => {
+        const li = document.createElement('li');
+        li.innerText = `${item.title} - $${item.price}`;
+        cartList.appendChild(li);
+    });
+    cartModal.style.display = 'flex';
+}
+
+// Place order
+placeOrderBtn.addEventListener('click', () => {
+    if (!currentUser) {
+        alert('Please log in to place an order.');
+        return;
+    }
+    alert('Order placed successfully!');
+    cart = [];
+    showCart();
+    cartModal.style.display = 'none';
+});
+
+// Close cart modal
+closeCartBtn.addEventListener('click', () => {
+    cartModal.style.display = 'none';
+});
+
+// Simulate login
+loginBtn.addEventListener('click', () => {
+    currentUser = prompt('Enter your name to log in:');
+    if (currentUser) {
+        userNameDisplay.innerText = `Welcome, ${currentUser}`;
+        userNameDisplay.classList.remove('hidden');
+        loginBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+    }
+});
+
+// Logout
+logoutBtn.addEventListener('click', () => {
+    currentUser = null;
+    userNameDisplay.classList.add('hidden');
+    loginBtn.classList.remove('hidden');
+    logoutBtn.classList.add('hidden');
+});
+
+// Search functionality
+searchInput.addEventListener('input', (event) => {
+    const query = event.target.value.toLowerCase();
+    const items = productList.getElementsByTagName('li');
+    
+    Array.from(items).forEach(item => {
+        const title = item.getElementsByTagName('strong')[0].innerText.toLowerCase();
+        if (title.includes(query)) {
+            item.style.display = '';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+    </script>
+</body>
+</html>
